@@ -22,7 +22,6 @@ import numpy as np
 from PIL import Image
 import StringIO
 
-
 FRGraph = FaceRecGraph();
 aligner = AlignCustom();
 extract_feature = FaceFeature(FRGraph)
@@ -30,14 +29,6 @@ face_detect = MTCNNDetect(FRGraph, scale_factor=2); #scale_factor, rescales imag
 feature_data_set = None
 
 
-def main(args):
-    mode = args.mode
-    if(mode == "camera"):
-        camera_recog()
-    elif mode == "input":
-        create_manual_data();
-    else:
-        raise ValueError("Unimplemented mode")
 '''
 Description:
 Images from Video Capture -> detect faces' regions -> crop those faces and align them 
@@ -49,71 +40,8 @@ Images from Video Capture -> detect faces' regions -> crop those faces and align
     
 '''
 
-
-tracker = None
-def track_people(frame, bbox):
-    global tracker
-    # Set up tracker.
-    # Instead of MIL, you can also use
- 
-    tracker_types = ['BOOSTING', 'MIL','KCF', 'TLD', 'MEDIANFLOW', 'GOTURN']
-    tracker_type = tracker_types[2]
- 
-    if 1 < 3:
-        tracker = cv2.Tracker_create(tracker_type)
-    else:
-        if tracker_type == 'BOOSTING':
-            tracker = cv2.TrackerBoosting_create()
-        if tracker_type == 'MIL':
-            tracker = cv2.TrackerMIL_create()
-        if tracker_type == 'KCF':
-            tracker = cv2.TrackerKCF_create()
-        if tracker_type == 'TLD':
-            tracker = cv2.TrackerTLD_create()
-        if tracker_type == 'MEDIANFLOW':
-            tracker = cv2.TrackerMedianFlow_create()
-        if tracker_type == 'GOTURN':
-            tracker = cv2.TrackerGOTURN_create()
- 
-    # Define an initial bounding box
-    bbox = (287, 23, 86, 320)
- 
-    # Uncomment the line below to select a different bounding box
-    bbox = cv2.selectROI(frame, False)
- 
-    # Initialize tracker with first frame and bounding box
-    ok = tracker.init(frame, bbox)
- 
-def recog_process_frame_with_tracker(frame):
-    global tracker
-    #print "111  ", int(round(time.time() * 1000))
-    #u can certainly add a roi here but for the sake of a demo i'll just leave it as simple as this
-    rects, landmarks = face_detect.detect_face(frame,40);#min face size is set to 80x80
-    for (i,rect) in enumerate(rects):
-        cv2.rectangle(frame,(rect[0],rect[1]),(rect[0] + rect[2],rect[1]+rect[3]),(0,0,255),2)
-        if (tracker is None):
-            track_people(frame,rect)
-        else:
-            # Start timer
-            timer = cv2.getTickCount()
- 
-            # Update tracker
-            ok, bbox = tracker.update(frame)
- 
-            # Draw bounding box
-            if ok:
-                # Tracking success
-                p1 = (int(bbox[0]), int(bbox[1]))
-                p2 = (int(bbox[0] + bbox[2]), int(bbox[1] + bbox[3]))
-                cv2.rectangle(frame, p1, p2, (255,0,0), 2, 1)
-            else :
-                # Tracking failure
-                cv2.putText(frame, "Tracking failure detected", (100,80), cv2.FONT_HERSHEY_SIMPLEX, 0.75,(0,0,255),2)
- 
-    return rects
-
 def detect_people(frame):
-    rets
+    rets = []
     rects, landmarks = face_detect.detect_face(frame,40);#min face size is set to 80x80
     for (i,rect) in enumerate(rects):
         rets.append({"name":"   ", "pos":rect})
@@ -135,8 +63,6 @@ def recog_process_frame(frame):
     recog_data = findPeople(features_arr,positions);
     for (i,rect) in enumerate(rects):
         rets.append({"name":recog_data[i], "pos":rect})
-#        cv2.rectangle(frame,(rect[0],rect[1]),(rect[0] + rect[2],rect[1]+rect[3]),(0,0,255),2) #draw bounding box for the face
-#        cv2.putText(frame, recog_data[i],(rect[0],rect[1]),cv2.FONT_HERSHEY_SIMPLEX,1,(255,255,255),2)
     return rets
 
 '''
@@ -151,7 +77,7 @@ facerec_128D.txt Data Structure:
 This function basically does a simple linear search for 
 ^the 128D vector with the min distance to the 128D vector of the face on screen
 '''
-def findPeople(features_arr, positions, thres = 0.5, percent_thres = 90):
+def findPeople(features_arr, positions, thres = 0.6, percent_thres = 90):
     '''
     :param features_arr: a list of 128d Features of all faces on screen
     :param positions: a list of face position types of all faces on screen
@@ -253,9 +179,7 @@ def __training_thread_remote(model, callback):
     files = {}
     for i,f in enumerate(model.images):
         files['file{}'.format(i)] = ('{}.png'.format(i), f, 'image/png')
-#    files = {'file': ('pic.png', picf, 'image/png')}
     r = requests.post(url, params=args, files=files)
-#    r = requests.post(url, params=args)
 
     args = {'id': model.name}
     headers = {"Content-type":"application/json","Accept": "application/json"}
@@ -283,9 +207,6 @@ def training_proframe_remote(model, frame):
     picf.seek(0)
 
     model.images.append(picf)
-#    args = {'id': model.name, 'end':'false'}
-#    files = {'file': ('pic.png', picf, 'image/png')}
-#    r = requests.post(url, params=args, files=files)
 
 def training_finish_remote(model, callback):
     t = threading.Thread(target=__training_thread_remote, args=(model, callback,))
