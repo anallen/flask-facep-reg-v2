@@ -77,7 +77,7 @@ def findPeople(features_arr, positions, thres = 0.6, percent_thres = 90):
     '''
     regRes = [];
     for (i,features_128D) in enumerate(features_arr):
-        returnRes = "Unknown";
+        returnRes = " ";
         smallest = sys.maxsize
         for person in feature_data_set.keys():
             person_data = feature_data_set[person][positions[i]];
@@ -89,6 +89,8 @@ def findPeople(features_arr, positions, thres = 0.6, percent_thres = 90):
         percentage =  min(100, 100 * thres / smallest)
         if percentage > percent_thres :
             regRes.append(returnRes+"-"+str(round(percentage,1))+"%")
+        else:
+            regRes.append(" ")
     return regRes
 
 def detect_people(frame):
@@ -106,3 +108,4 @@ def load_modules():
     global feature_data_set
     f = open('./models/facerec_128D.txt','r');
     feature_data_set = json.loads(f.read());
+    f.close()

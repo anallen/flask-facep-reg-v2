@@ -20,24 +20,26 @@ import StringIO
 import requests
 import threading
 
-url = 'http://10.193.20.77:8383/train'
+url = ''
 train_images = []
-train_name = ""
+train_name = ''
+feature_data_set = {}
 
-def get_person_names():
+def get_names():
     names = []
     for name in feature_data_set:
         names.append(name)
     return names
 
-def delete_person_name(name):
-    if (has_name(name)):
+def delete_module(name):
+    if (feature_data_set is not None and name in feature_data_set):
         args = {'id': name}
         headers = {"Content-type":"application/json","Accept": "application/json"}
         r = requests.delete(url, params=args, headers=headers)
-        return True
-    else
-        return False
+        ret = json.loads(r.text)
+        if ('state'in ret and ret['state'] == 'SUCCESS'):
+             return True
+    return False
 
 def __training_thread():
     args = {'id': train_images, 'end':'true'}
@@ -54,7 +56,11 @@ def training_start(name):
     train_name = name
     headers = {"Content-type":"application/json","Accept": "application/json"}
     r = requests.put(url, params=args, headers=headers)
-    return PersonModel(name)
+    ret = json.loads(r.text)
+    if ('state'in ret and ret['state'] == 'SUCCESS'):
+        return True
+    else:
+        return False
 
 def training_proframe(frame):
     picf = StringIO.StringIO()
@@ -70,10 +76,19 @@ def training_finish():
     return t
 
 def update_modules():
+    global feature_data_set
     headers = {"Content-type":"application/json","Accept": "application/json"}
     r = requests.get(url, headers=headers)
+    if (r.status_code == 200):
+        f = open('./models/facerec_128D.txt','w');
+        f.write(r.content)
+        f.close()
+        feature_data_set = json.loads(r.content);
+        return True
+    else:
+        return False
 
 def modules_init(serverip='localhost'):
-    f = open('./models/facerec_128D.txt','r');
-    feature_data_set = json.loads(f.read());
-    global url = 'http://{}:8383/train'.format(serverip)
+    global url
+    url  = 'http://{}:8383/train'.format(serverip)
+    update_modules()

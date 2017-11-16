@@ -7,6 +7,8 @@ from autobahn.twisted.websocket import WebSocketServerFactory, \
 from multiprocessing import Process, Queue, Lock
 import threading, time
 import numpy as np
+import facemodules_client as facemodules
+import paho.mqtt.client as mqtt
 
 
 class FaceRecognitonProcess(Process):
@@ -24,23 +26,22 @@ class FaceRecognitonProcess(Process):
 
     def run(self):
         import face_recg as face_recg
-#        face_recg.recog_engine_init(serverip=self.serverip)
         
         print("recogProcess start")
-        face_recg.load_modules()
         while (1):
-            try:
+#            try:
                 recognition, inFrame, needUpdate = self.reciveFrame()
 
-#                if (needUpdate == 1)
+                if (needUpdate == True):
+                    face_recg.load_modules()
 
                 if recognition:
                     rets = face_recg.recog_process_frame(inFrame)
                 else:
                     rets = face_recg.detect_people(inFrame)
                 self.sendResult((rets, needUpdate))
-            except Exception as e:
-                print e
+#            except Exception as e:
+#                print e
 
 
 class FaceRecogniton():
@@ -48,6 +49,7 @@ class FaceRecogniton():
         self.processes = []
         self.frameq = []
         self.retq = []
+        self.needUpdate = []
         self.serverip = serverip
         self.nextprocess = 0
         self.nextresult = 0
@@ -61,13 +63,10 @@ class FaceRecogniton():
             self.frameq.append(frameq)
             self.retq.append(retq)
             self.processes.append(process)
+            self.needUpdate.append(True)
 
-    def setRetCallback(self, callback):
-        if self.retCallback is not None:
-            return
-        self.t = threading.Thread(target=self.getResult)
-        self.retCallback = callback
-        self.t.start()
+        facemodules.modules_init(self.serverip)
+        self.mqttclient = None
 
     def proImageFile(self, imgf, recognition=True):
         frame = np.array(imgf)
@@ -78,7 +77,7 @@ class FaceRecogniton():
         try:
             if (frameq.full()):
                 frameq.get_nowait()
-            frameq.put((recognition, frame, 1))
+            frameq.put((recognition, frame, self.needUpdate[self.nextprocess]))
             self.nextprocess = (self.nextprocess + 1) % self.processnum
         except Exception as e:
             print(e)
@@ -87,12 +86,40 @@ class FaceRecogniton():
        try:
            retq = self.retq[self.nextresult]
            ret, updated = retq.get_nowait()
+           if updated == True:
+               self.needUpdate[self.nextresult] = False
            self.nextresult = (self.nextresult + 1) % self.processnum
            return ret
        except Exception as e:
            return None
 
+    def deleteName(self, name):
+        return facemodules.delete_module(name)
+
+    def getNames(self):
+        return facemodules.get_names()
+
+    def onModuleUpdated(self, c, d, m):
+        print "get mesg"
+        for i in range(self.processnum):
+            self.needUpdate[i] = False
+        facemodules.update_modules()
+        self.callback()
+
+    def startListener(self, callback):
+        if self.mqttclient is not None:
+            return
+        self.mqttclient = mqtt.Client()
+        self.mqttclient.on_message = self.onModuleUpdated
+        self.mqttclient.on_connect = self.__onMqttConnect
+        self.mqttclient.connect(self.serverip, 1883, 60)
+        self.mqttclient.loop_start()
+        self.mqttclient.subscribe("NXP_FACE_RECG_MODULES_UPDATED", qos=1)
+        self.callback = callback
+    def __onMqttConnect(self, client, userdata, flags, rc):
+        print('Connected to MQTT broker with error code:' + str(rc))
 
 
-facerecg = FaceRecogniton(processnum=1)
+
+
 

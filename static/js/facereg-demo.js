@@ -61,7 +61,7 @@ function drawFrame(){
     tmp = recgRet;
     //Drow people names
     for (var key in tmp) {
-        var rect = tmp[key]["pos"];
+        var rect = tmp[key]["rect"];
         var name = tmp[key]["name"];
         outputCtx.lineWidth=2;
         outputCtx.strokeStyle="red";
@@ -167,12 +167,14 @@ function initCamera() {
      // Put video listeners into place
      if(navigator.getUserMedia) { // Standard
          navigator.getUserMedia(vConstraints, function(stream) {
+        console.log("11111");
              video.src = window.URL.createObjectURL(stream) || stream;
              video.play();
              vidReady = true;
          }, onErr);
      } else if(navigator.webkitGetUserMedia) { // WebKit-prefixed
          navigator.webkitGetUserMedia(vConstraints, function(stream){
+        console.log("3333");
              video.src = window.URL.createObjectURL(stream) || stream;
              video.play();
              vidReady = true;
@@ -180,6 +182,7 @@ function initCamera() {
      }
      else if(navigator.mozGetUserMedia) { // Firefox-prefixed
          navigator.mozGetUserMedia(vConstraints, function(stream){
+        console.log("22222");
              video.srcObject = stream;
              video.play();
              vidReady = true;
