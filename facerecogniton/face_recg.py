@@ -53,7 +53,7 @@ def recog_process_frame(frame):
     features_arr = extract_feature.get_features(aligns)
     recog_data = findPeople(features_arr,positions);
     for (i,rect) in enumerate(rects):
-        rets.append({"name":recog_data[i], "pos":rect})
+        rets.append({"name":recog_data[i], "rect":rect})
     return rets
 
 '''
@@ -87,11 +87,20 @@ def findPeople(features_arr, positions, thres = 0.6, percent_thres = 90):
                     smallest = distance;
                     returnRes = person;
         percentage =  min(100, 100 * thres / smallest)
-        if percentage <= percent_thres :
-            regRes.append("Unknown")
-        else:
+        if percentage > percent_thres :
             regRes.append(returnRes+"-"+str(round(percentage,1))+"%")
     return regRes
+
+def detect_people(frame):
+    rects, landmarks = face_detect.detect_face(frame,40);#min face size is set to 80x80
+    aligns = []
+    positions = []
+    rets = []
+    for (i, rect) in enumerate(rects):
+        aligned_face, face_pos = aligner.align(160,frame,landmarks[i])
+        rets.append({"name":"", "rect":rect, 'pos':face_pos})
+    return rets
+
 
 def load_modules():
     global feature_data_set
