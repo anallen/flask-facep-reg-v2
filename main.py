@@ -7,6 +7,10 @@ from websocket import startWebSocketServer
 
 #from camera_opencv import *
 
+fdir = os.path.dirname(os.path.realpath(__file__))
+tls_crt = os.path.join(fdir, 'tls', 'server.crt')
+tls_key = os.path.join(fdir, 'tls', 'server.key')
+
 app = Flask(__name__)
 
 @app.route('/')
@@ -30,7 +34,7 @@ def video_feed():
                     mimetype='multipart/x-mixed-replace; boundary=frame')
 
 if __name__ == '__main__':
-    startWebSocketServer()
-    app.run(host='0.0.0.0', threaded=True)
-    #app.run(host='0.0.0.0', threaded=True, ssl_context='adhoc')
+    startWebSocketServer(tls_key, tls_crt)
+    #app.run(host='0.0.0.0', threaded=True)
+    app.run(host='0.0.0.0', threaded=True, ssl_context=(tls_crt, tls_key))
 

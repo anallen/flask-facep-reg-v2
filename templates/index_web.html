@@ -28,13 +28,12 @@ limitations under the License.
     </head>
     <body>
         <div class="container">
-            <div class="header">
-                <video id="videocamera" width="960" height="540"
-                           preload="auto" loop></video>
+            <div class="header" style="visibility:hidden;">
+                <video id="videocamera" width="640" height="480" preload="auto"/>
             </div>
-            <!--div class="header">
-                <canvas id="canvasoutput" width="960" height="540"/>
-            </div-->
+            <div class="header">
+                <canvas id="canvasoutput" width="640" height="480"/>
+            </div>
             <div class="content1">
                 <h4>Server: <span id="serverStatus"></span></h4>
                 <h4>Input Your Name:
@@ -64,10 +63,10 @@ limitations under the License.
     <script src="{{url_for('static',filename='vendor/js/jstat.min.js')}}"></script>
     <script src="{{url_for('static',filename='js/facereg-demo.js')}}"></script>
     <script type="text/javascript">
-     var defaultTok = 1, defaultNumNulls = 20;
-     var people = '', training = false;
-     var socket, socketName;
-     var regRet;
+     var people = '', training = false, socket;
+     var bufferCtx = [], bufferConvas = [], currentCtx;
+     var recgRet, vidReady = false;
+     const bufNum = 20;
 
 
      $('#btn_start').click(btnStartOnclick);
@@ -75,31 +74,11 @@ limitations under the License.
      $('#btn_delete').click(btnDeleteOnclick);
 
      var video=document.getElementById('videocamera');
-//     var aCanvas=document.getElementById('canvasoutput');  
-//     var ctx=aCanvas.getContext('2d');  
+     var canvas=document.getElementById('canvasoutput');  
+     var outputCtx=canvas.getContext('2d');  
 
-     errBack = function(error) {
-         alert(error);
-     };
-     // Put video listeners into place
-     if(navigator.getUserMedia) { // Standard
-         navigator.getUserMedia({"video":true}, function(stream) {
-             video.src = stream;
-             video.play();
-         }, errBack);
-     } else if(navigator.webkitGetUserMedia) { // WebKit-prefixed
-         navigator.webkitGetUserMedia({"video":true}, function(stream){
-             video.src = window.webkitURL.createObjectURL(stream);
-             video.play();
-         }, errBack);
-     }
-     else if(navigator.mozGetUserMedia) { // Firefox-prefixed
-         navigator.mozGetUserMedia({"video":true}, function(stream){
-             video.srcObject = stream;
-             video.play();
-         }, errBack);
-     }
 
-     createSocket("ws://" + window.location.hostname + ":9000");
+     createSocket("wss://" + window.location.hostname + ":9000");
+
     </script>
 </html>

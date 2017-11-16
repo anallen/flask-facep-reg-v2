@@ -1,12 +1,11 @@
 import cv2
 from base_camera import BaseCamera
-from facerecogniton.facerecogniton import FaceRecogniton
+from facerecogniton.facerecogniton import facerecg
 import Queue
 
 
-facerecg = FaceRecogniton(processnum=2)
 class Camera(BaseCamera):
-    video_source = 0
+    video_source = 'rtsp://admin:china123@192.168.1.13:554/mpeg/ch1/sub/av_stream'
     reg_ret = []
 
     @staticmethod
@@ -18,9 +17,9 @@ class Camera(BaseCamera):
         global facerecg
         frameq = Queue.Queue(maxsize=10)
         camera = cv2.VideoCapture(Camera.video_source)
-        camera.set(cv2.CAP_PROP_FRAME_WIDTH, 960)
-        camera.set(cv2.CAP_PROP_FRAME_HEIGHT, 540)
-        camera.set(cv2.CAP_PROP_FPS, 30)
+        #camera.set(cv2.CAP_PROP_FRAME_WIDTH, 960)
+        #camera.set(cv2.CAP_PROP_FRAME_HEIGHT, 540)
+        #camera.set(cv2.CAP_PROP_FPS, 30)
         current_frame = 0
 
         if not camera.isOpened():

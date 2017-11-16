@@ -10,7 +10,7 @@ import cv2
 import os
 
 class MTCNNDetect(object):
-    def __init__(self, face_rec_graph, model_path = "models", threshold = [0.6, 0.7, 0.7], factor = 0.709, scale_factor = 1):
+    def __init__(self, model_path = "models", threshold = [0.6, 0.7, 0.7], factor = 0.709, scale_factor = 1):
         '''
         :param face_rec_sess: FaceRecSession
         :param threshold: detection threshold
@@ -20,7 +20,7 @@ class MTCNNDetect(object):
         self.threshold = threshold
         self.factor = factor
         self.scale_factor = scale_factor;
-        with face_rec_graph.graph.as_default(), tf.device('/cpu:0'):
+        with tf.Graph().as_default(), tf.device('/cpu:0'):
             print("Loading MTCNN Face detection model")
             self.sess = tf.Session()
             if not model_path:

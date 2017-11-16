@@ -3,18 +3,29 @@ from twisted.internet import reactor
 from autobahn.twisted.websocket import WebSocketServerFactory, \
                                WebSocketServerProtocol, \
                                listenWS
+from twisted.internet import task, defer
 
+from twisted.internet.ssl import DefaultOpenSSLContextFactory
+from facerecogniton.facerecogniton import facerecg
 from multiprocessing import Process
+import time, StringIO, base64, os
+from PIL import Image
+import threading
+
+
 
 class FaceServerProtocol(WebSocketServerProtocol):
     def __init__(self):
         super(FaceServerProtocol, self).__init__()
         self.new_person = None
         self.peoples = []
-        reactor.callLater(1,self.timerCallback)
+        #self.t = threading.Thread(target=self.getResultThread)
+        #self.t.start()
 
-    def timerCallback(self):
-        reactor.callLater(1,self.timerCallback)
+    def getResultThread(self):
+        while (1):
+            rets = facerecg.getResult()
+            self.sendSocketMessage("RECGFRAME_RESP", rets)
 
     def onOpen(self):
         print "open"
@@ -25,6 +36,8 @@ class FaceServerProtocol(WebSocketServerProtocol):
     def onMessage(self, payload, binary):
         raw = payload.decode('utf8')
         msg = json.loads(raw)
+        #print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time())),
+        #       "get message type=" + msg['type'])
         if msg['type'] == "CONNECT_REQ":
             self.sendSocketMessage("CONNECT_RESP")
         elif msg['type'] == "LOADNAME_REQ":
@@ -40,10 +53,15 @@ class FaceServerProtocol(WebSocketServerProtocol):
                 self.sendSocketMessage(ret["type"], ret["msg"])
             else:
                 self.sendSocketMessage("ERROR_MSG", name + " is not in database")
+        elif msg['type'] == "RECGFRAME_REQ":
+            self.proWebFrame(msg['dataURL'])
+            rets = facerecg.getResult()
+            if rets is not None:
+                self.sendSocketMessage("RECGFRAME_RESP", rets)
         elif msg['type'] == "TRAINSTART_REQ":
             name = msg['msg'].encode('ascii', 'ignore')
             if (name in self.peoples):
-                self.sendSocketMessage("ERROR_MSG", name + " is already in database")
+                elf.sendSocketMessage("ERROR_MSG", name + " is already in database")
             else:
                 #ret = self.sendQueueMessage("TRAINSTART_REQ", name)
                 self.sendSocketMessage(ret["type"], ret["msg"])
@@ -53,16 +71,29 @@ class FaceServerProtocol(WebSocketServerProtocol):
 
     def sendSocketMessage(self, mtype, msg = ""):
         msg = { "type" : mtype, 'msg' : msg }
-        print("send sendSocketMessage:",json.dumps(msg))
+        #print("send sendSocketMessage:",json.dumps(msg))
         self.sendMessage(json.dumps(msg))
 
-def socketServerProcess():
-    factory = WebSocketServerFactory("ws://localhost:9000")
+    def proWebFrame(self, dataURL):
+        head = "data:image/jpeg;base64,"
+        assert(dataURL.startswith(head))
+        imgdata = base64.b64decode(dataURL[len(head):])
+        imgf = Image.open(StringIO.StringIO(imgdata))
+        facerecg.proImageFile(imgf)
+
+fdir = os.path.dirname(os.path.realpath(__file__))
+tls_crt = os.path.join(fdir, 'tls', 'server.crt')
+tls_key = os.path.join(fdir, 'tls', 'server.key')
+
+
+def startSocketServer():
+    factory = WebSocketServerFactory()
     factory.protocol = FaceServerProtocol
-    listenWS(factory)
+    ctx_factory = DefaultOpenSSLContextFactory(tls_key, tls_crt)
+    reactor.listenSSL(9000, factory, ctx_factory)
     reactor.run()
 
-def startWebSocketServer():
-    p2 = Process(target = socketServerProcess)
+def startWebSocketServer(tls_key, tls_crt):
+    p2 = Process(target = startSocketServer)
     p2.start()
 
