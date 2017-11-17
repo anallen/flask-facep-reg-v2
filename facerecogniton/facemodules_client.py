@@ -95,6 +95,9 @@ def update_modules():
     else:
         return False
 
+def has_name(name):
+    return name in feature_data_set
+
 def modules_init(serverip='localhost'):
     global url
     url  = 'http://{}:8383/train'.format(serverip)

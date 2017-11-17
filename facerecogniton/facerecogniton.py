@@ -57,7 +57,7 @@ mqttclient = None
 
 training = False
 poscount = {"Left" : 0, "Right": 0, "Center": 0};
-training_name = ''
+training_name = None
 
 def initEngine(pronum=1, server='localhost'):
     global serverip, processnum
@@ -96,7 +96,7 @@ def proCvFrame(frame):
 
 def trainStart(name):
     global training,poscount,training_name
-    if(training or facemodules.training_start(name) == False):
+    if(training or training_name or facemodules.training_start(name) == False):
         return False
     training = True
     training_name = name
@@ -112,12 +112,16 @@ def getResult():
         if updated:
             needUpdate[nextresult] = False
         if training and len(rets) == 1 and "pos" in rets[0]:
-            poscount[rets[0]["pos"]] += 1
+            if poscount[rets[0]["pos"]] < 15:
+                poscount[rets[0]["pos"]] += 1
             print(poscount)
-            if poscount["Left"] >= 10 and poscount["Right"] >= 10 and poscount["Center"] >= 10:
+            if poscount["Left"] == 15 and poscount["Right"] == 15 and poscount["Center"] == 15:
                 facemodules.training_finish(training_name)
                 training = False
-                training_name = ''
+            rets[0]["name"] = training_name + "-training"
+            rets[0]['l'] = poscount["Left"]
+            rets[0]['r'] = poscount["Right"]
+            rets[0]['f'] = poscount["Center"]
         nextresult = (nextresult + 1) % processnum
         return rets
     except Exception as e:
@@ -130,11 +134,15 @@ getNames = facemodules.get_names
 
 def onModuleUpdated(c, d, m):
     print "get mesg"
-    global processnum,callback,needUpdate
+    global processnum,callback,needUpdate,training_name
     for i in range(processnum):
         needUpdate[i] = True
     facemodules.update_modules()
-    callback()
+    if training_name and facemodules.has_name(training_name):
+        callback(True)
+        training_name = None
+    else:
+        callback(False)
 
 def startListener(cb):
     global mqttclient, callback

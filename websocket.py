@@ -19,14 +19,13 @@ class FaceServerProtocol(WebSocketServerProtocol):
         print "in  __init__"
         super(FaceServerProtocol, self).__init__()
         self.new_person = None
-        self.moduleUpdated = False
 
-    def modulesUpdate(self):
-        self.moduleUpdated = True
+    def modulesUpdate(self, finish=False):
         names = facerecg.getNames()
         self.sendSocketMessage("LOADNAME_RESP", ",".join(names))
-        self.moduleUpdated = False
-        
+        if finish:
+            self.sendSocketMessage("TRAINFINISH_RESP")
+            
     def onOpen(self):
         facerecg.startListener(self.modulesUpdate)
         print "open"
@@ -42,8 +41,8 @@ class FaceServerProtocol(WebSocketServerProtocol):
             self.sendSocketMessage("CONNECT_RESP", msg)
         elif msg['type'] == "LOADNAME_REQ":
             names = facerecg.getNames()
-            print names
             self.sendSocketMessage("LOADNAME_RESP", ",".join(names))
+            self.sendSocketMessage("INITCAMERA")
         elif msg['type'] == "DELETENAME_REQ":
             name = msg['msg'].encode('ascii', 'ignore')
             ret = facerecg.deleteName(name)
@@ -62,7 +61,7 @@ class FaceServerProtocol(WebSocketServerProtocol):
             else:
                 self.sendSocketMessage("TRAINSTART_RESP")
         elif msg['type'] == "TRAINFINISH_REQ":
-            self.sendSocketMessage(ret["type"], ret["msg"])
+            print("TRAINFINISH_REQ ignore")
 
     def sendSocketMessage(self, mtype, msg = ""):
         msg = { "type" : mtype, 'msg' : msg }

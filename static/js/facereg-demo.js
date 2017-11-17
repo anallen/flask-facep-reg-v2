@@ -41,6 +41,23 @@ function btnDeleteOnclick(){
     sendMessage("DELETENAME_REQ", name);
 }
 
+function showProcessBars(){
+    document.getElementById("processdiv").setAttribute("style","visibility:visible");
+    setProcessBards(0, 0, 0);
+}
+function hideProcessBars(){
+    document.getElementById("processdiv").setAttribute("style","visibility:hidden");
+}
+
+function setProcessBards(l, r, f) {
+    var left = document.getElementById('processleft');
+    var right = document.getElementById('processright');
+    var front = document.getElementById('processfront');
+    left.value = l;
+    right.value = r;
+    front.value = f;
+}
+
 function createCacheConvas(){
     for (var j = 0; j < bufNum; j ++) {
         var cvs = document.createElement("canvas");
@@ -117,32 +134,36 @@ function createSocket(address) {
     socket.onopen = function() {
         console.log("On open");
         socket.send(JSON.stringify({'type': 'CONNECT_REQ'}));
-        $("#serverStatus").html("Connected.");
         $("#trainingStatus").html("Recognizing.");
     }
     socket.onmessage = function(e) {
-        console.log(e);
+        //console.log(e);
         j = JSON.parse(e.data)
         if (j.type == "CONNECT_RESP") {
             if (numConnect >= 10) {
                 sendMessage("LOADNAME_REQ", "");
-//        } else if (j.type == "INITCAMERA") {
-                initCamera();
-                createCacheConvas();
-                processFrameLoop();
             } else {
                 numConnect ++;
                 socket.send(JSON.stringify({'type': 'CONNECT_REQ'}));
             }
+        } else if (j.type == "INITCAMERA") {
+                initCamera();
+                createCacheConvas();
+                processFrameLoop();
         } else if (j.type == "LOADNAME_RESP") {
             redrawPeople(j['msg']);
         } else if (j.type == "RECGFRAME_RESP") {
             recgRet = j['msg'];
+            if (recgRet.length == 1 && 'l' in recgRet[0] &&
+			'r' in recgRet[0] && 'f' in recgRet[0]) {
+                setProcessBards(recgRet[0]['l'], recgRet[0]['r'], recgRet[0]['f'])
+            }
         } else if (j.type == "TRAINSTART_RESP") {
             $("#trainingStatus").html("Training.");
+            showProcessBars();
         } else if (j.type == "TRAINFINISH_RESP") {
-            redrawPeople(j['msg']);
             $("#trainingStatus").html("Recognizing.");
+             hideProcessBars();
         } else if (j.type == "ERROR_MSG") {
             alert(j['msg']);
         } else if (j.type == "TRAINPROCESS") {
@@ -156,7 +177,7 @@ function createSocket(address) {
     }
     socket.onclose = function(e) {
         if (e.target == socket) {
-            $("#serverStatus").html("Disconnected.");
+            $("#trainingStatus").html("Disconnected.");
         }
     }
 }
@@ -172,14 +193,12 @@ function initCamera() {
      // Put video listeners into place
      if(navigator.getUserMedia) { // Standard
          navigator.getUserMedia(vConstraints, function(stream) {
-        console.log("11111");
              video.src = window.URL.createObjectURL(stream) || stream;
              video.play();
              vidReady = true;
          }, onErr);
      } else if(navigator.webkitGetUserMedia) { // WebKit-prefixed
          navigator.webkitGetUserMedia(vConstraints, function(stream){
-        console.log("3333");
              video.src = window.URL.createObjectURL(stream) || stream;
              video.play();
              vidReady = true;
@@ -187,7 +206,6 @@ function initCamera() {
      }
      else if(navigator.mozGetUserMedia) { // Firefox-prefixed
          navigator.mozGetUserMedia(vConstraints, function(stream){
-        console.log("22222");
              video.srcObject = stream;
              video.play();
              vidReady = true;

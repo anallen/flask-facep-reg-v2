@@ -45,31 +45,32 @@ img {
     margin-left: auto;
     margin-right: auto;
     margin-bottom: 10px;
-    width: 80%;
-    height: 600px;
+    width: 640px;
+    height: 480px;
     /* overflow-y: scroll; */
 }
 
 .container .content1 {
-    top: 630px;
+    top: 500px;
     bottom: 0;
     position: absolute;
     right: 0;
     left: 0;
-    margin: auto;
+    margin-left: 20%;
+    margin-right: auto;
     width: 50%;
     height: auto;
     /* overflow-y: scroll; */
 }
 
 .container .content2 {
-    top: 630px;
+    top: 500px;
     bottom: 0;
     position: absolute;
     right: 0;
     left: 60%;
     margin: auto;
-    width: 60%;
+    /*width: 60%;*/
     height: auto;
     /* overflow-y: scroll; */
 }
@@ -107,3 +108,24 @@ ul.tabs li.current{
     display: inherit;
 }
 
+.mypro{
+    background: none;
+    border:1px solid red;
+    border:2px solid #000;
+    width:250px;
+    height:20px;
+/*    visibility:hidden; */
+    -webkit-appearance: none;
+ }
+::-ms-fill{
+    background:deeppink;
+}
+::-moz-progress-bar{
+    background:deeppink;
+ }
+::-webkit-progress-bar{
+    background:none;
+ }
+::-webkit-progress-value{
+    background:deeppink;
+ }
