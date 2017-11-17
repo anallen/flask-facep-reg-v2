@@ -16,7 +16,6 @@ import threading
  
 class FaceServerProtocol(WebSocketServerProtocol):
     def __init__(self):
-        print "in  __init__"
         super(FaceServerProtocol, self).__init__()
         self.new_person = None
 

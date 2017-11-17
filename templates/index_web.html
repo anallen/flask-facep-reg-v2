@@ -32,7 +32,7 @@ limitations under the License.
                 <video id="videocamera" width="640" height="480" preload="auto"/>
             </div>
             <div class="header">
-                <canvas id="canvasoutput" width="640" height="480"/>
+                <canvas id="canvasoutput" width="800" height="600"/>
             </div>
             <div class="content2">
                 <h4>All Names:</h4>
@@ -81,7 +81,8 @@ limitations under the License.
 
      var video=document.getElementById('videocamera');
      var canvas=document.getElementById('canvasoutput');  
-     var outputCtx=canvas.getContext('2d');  
+     var outputCtx=canvas.getContext('2d');
+     var scale = canvas.width/video.width;
 
 
      createSocket("wss://" + window.location.hostname + ":9000");

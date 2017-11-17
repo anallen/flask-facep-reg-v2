@@ -45,13 +45,13 @@ img {
     margin-left: auto;
     margin-right: auto;
     margin-bottom: 10px;
-    width: 640px;
-    height: 480px;
+    width: 800px;
+    height: 600px;
     /* overflow-y: scroll; */
 }
 
 .container .content1 {
-    top: 500px;
+    top: 620px;
     bottom: 0;
     position: absolute;
     right: 0;
@@ -64,7 +64,7 @@ img {
 }
 
 .container .content2 {
-    top: 500px;
+    top: 620px;
     bottom: 0;
     position: absolute;
     right: 0;

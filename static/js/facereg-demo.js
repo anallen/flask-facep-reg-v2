@@ -70,23 +70,39 @@ function createCacheConvas(){
     currentCtx = 0;
 }
 
+function drawLongText(longtext,context,begin_width,begin_height)  
+{   
+    var begin_width = begin_width;  
+    var begin_height = begin_height;  
+    var newtext = longtext.split('\n');  
+    var stringLenght = newtext.length;  
+    context.textAlign = 'left';  
+    
+    for(i = 0; i < stringLenght ; i++) {  
+        begin_height += 25;
+        context.fillText(newtext[i],begin_width,begin_height);
+    }  
+}
 function drawFrame(){
     bufferCtx[currentCtx].drawImage(video, 0, 0);
     currentCtx = (currentCtx + 1 == bufNum) ? 0 : currentCtx + 1;
-    outputCtx.drawImage(bufferConvas[currentCtx], 0, 0)
+    outputCtx.drawImage(bufferConvas[currentCtx], 0, 0, canvas.width, canvas.height);
 
     tmp = recgRet;
     //Drow people names
     for (var key in tmp) {
         var rect = tmp[key]["rect"];
         var name = tmp[key]["name"];
+        var inf = tmp[key]["info"];
         outputCtx.lineWidth=2;
         outputCtx.strokeStyle="red";
         outputCtx.beginPath();
-        outputCtx.rect(rect[0], rect[1], rect[2], rect[3]);
+        outputCtx.rect(rect[0]*scale, rect[1]*scale, rect[2]*scale, rect[3]*scale);
         outputCtx.closePath();
         outputCtx.font="25px Arial";
-        outputCtx.fillText(name, rect[0], rect[1]);
+        outputCtx.fillText(name, rect[0]*scale, rect[1]*scale);
+        //outputCtx.fillText(inf, rect[0]*scale + rect[2]*scale, rect[1]*scale);
+        drawLongText(inf, outputCtx, rect[0]*scale + rect[2]*scale, rect[1]*scale)
         outputCtx.stroke();
     }
 }

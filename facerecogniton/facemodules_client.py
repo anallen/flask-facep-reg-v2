@@ -23,6 +23,7 @@ import threading
 url = ''
 person_images = {}
 feature_data_set = {}
+info_data_set = {}
 
 def get_names():
     names = []
@@ -82,14 +83,19 @@ def training_finish(name, callback=None):
     return t
 
 def update_modules():
-    global feature_data_set
+    global feature_data_set, info_data_set
     headers = {"Content-type":"application/json","Accept": "application/json"}
     r = requests.get(url, headers=headers)
     if (r.status_code == 200):
-        f = open('./models/facerec_128D.txt','w');
+        f = open('./models/facerec_128D.txt','w')
         f.write(r.content)
         f.close()
-        feature_data_set = json.loads(r.content);
+        feature_data_set = json.loads(r.content)
+
+        f = open('./models/detailinfo.txt','r')
+        text = f.read()
+        info_data_set = json.loads(text)
+        f.close()
         print "update_modules"
         return True
     else:
@@ -97,6 +103,12 @@ def update_modules():
 
 def has_name(name):
     return name in feature_data_set
+
+def get_info(name):
+    if name in info_data_set:
+        return info_data_set[name]
+    else:
+        return ""
 
 def modules_init(serverip='localhost'):
     global url

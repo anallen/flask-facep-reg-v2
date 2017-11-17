@@ -111,6 +111,8 @@ def getResult():
         rets, updated = rq.get_nowait()
         if updated:
             needUpdate[nextresult] = False
+        for i in rets:
+            i["info"] = facemodules.get_info(i["name"])
         if training and len(rets) == 1 and "pos" in rets[0]:
             if poscount[rets[0]["pos"]] < 15:
                 poscount[rets[0]["pos"]] += 1
