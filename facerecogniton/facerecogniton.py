@@ -137,9 +137,9 @@ getNames = facemodules.get_names
 def onModuleUpdated(c, d, m):
     print "get mesg"
     global processnum,callback,needUpdate,training_name
+    facemodules.update_modules()
     for i in range(processnum):
         needUpdate[i] = True
-    facemodules.update_modules()
     if training_name and facemodules.has_name(training_name):
         callback(True)
         training_name = None
