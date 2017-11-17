@@ -29,97 +29,130 @@ class FaceRecognitonProcess(Process):
         
         print("recogProcess start")
         while (1):
-#            try:
-                recognition, inFrame, needUpdate = self.reciveFrame()
+            try:
+                training, inFrame, needUpdate = self.reciveFrame()
 
                 if (needUpdate == True):
                     face_recg.load_modules()
 
-                if recognition:
-                    rets = face_recg.recog_process_frame(inFrame)
-                else:
+                if training:
                     rets = face_recg.detect_people(inFrame)
+                else:
+                    rets = face_recg.recog_process_frame(inFrame)
                 self.sendResult((rets, needUpdate))
-#            except Exception as e:
-#                print e
+            except Exception as e:
+                print e
+
+processnum = 1
+processes = []
+frameq = []
+retq = []
+needUpdate = []
+
+nextprocess = 0
+nextresult = 0
+
+serverip = ""
+mqttclient = None
+
+training = False
+poscount = {"Left" : 0, "Right": 0, "Center": 0};
+training_name = ''
+
+def initEngine(pronum=1, server='localhost'):
+    global serverip, processnum
+    serverip = server
+    processnum = pronum
+    
+    for i in range(processnum):
+        fq = Queue(maxsize = 1)
+        rq = Queue(maxsize = 1)
+        process = FaceRecognitonProcess(fq, rq, serverip)
+        process.start()
+        frameq.append(fq)
+        retq.append(rq)
+        processes.append(process)
+        needUpdate.append(True)
+
+    facemodules.modules_init(serverip)
+
+def proImageFile(imgf):
+    frame = np.array(imgf)
+    proCvFrame(frame)
+    if training:
+        facemodules.training_proframe(training_name, frame)
+        #facemodules.training_proimage(training_name, imgf)
+
+def proCvFrame(frame):
+    global nextprocess,training
+    fq = frameq[nextprocess]
+    try:
+        if (fq.full()):
+            fq.get_nowait()
+        fq.put((training, frame, needUpdate[nextprocess]))
+        nextprocess = (nextprocess + 1) % processnum
+    except Exception as e:
+        print(e)
+
+def trainStart(name):
+    global training,poscount,training_name
+    if(training or facemodules.training_start(name) == False):
+        return False
+    training = True
+    training_name = name
+    poscount = {"Left" : 0, "Right": 0, "Center": 0};
+    return True
+
+def getResult():
+    global nextresult,poscount,training,training_name
+    try:
+        rq = retq[nextresult]
+        #rets, updated = rq.get()
+        rets, updated = rq.get_nowait()
+        if updated:
+            needUpdate[nextresult] = False
+        if training and len(rets) == 1 and "pos" in rets[0]:
+            poscount[rets[0]["pos"]] += 1
+            print(poscount)
+            if poscount["Left"] >= 10 and poscount["Right"] >= 10 and poscount["Center"] >= 10:
+                facemodules.training_finish(training_name)
+                training = False
+                training_name = ''
+        nextresult = (nextresult + 1) % processnum
+        return rets
+    except Exception as e:
+        print e
+        return None
 
 
-class FaceRecogniton():
-    def __init__(self, processnum=1, serverip='localhost'):
-        self.processes = []
-        self.frameq = []
-        self.retq = []
-        self.needUpdate = []
-        self.serverip = serverip
-        self.nextprocess = 0
-        self.nextresult = 0
-        self.processnum = processnum
+deleteName = facemodules.delete_module
+getNames = facemodules.get_names
 
-        for i in range(processnum):
-            frameq = Queue(maxsize = 1)
-            retq = Queue(maxsize = 1)
-            process = FaceRecognitonProcess(frameq, retq, serverip)
-            process.start()
-            self.frameq.append(frameq)
-            self.retq.append(retq)
-            self.processes.append(process)
-            self.needUpdate.append(True)
+def onModuleUpdated(c, d, m):
+    print "get mesg"
+    global processnum,callback,needUpdate
+    for i in range(processnum):
+        needUpdate[i] = True
+    facemodules.update_modules()
+    callback()
 
-        facemodules.modules_init(self.serverip)
-        self.mqttclient = None
+def startListener(cb):
+    global mqttclient, callback
+    if mqttclient is not None:
+        return
+    mqttclient = mqtt.Client()
+    mqttclient.on_message = onModuleUpdated
+    mqttclient.connect(serverip, 1883, 60)
+    mqttclient.loop_start()
+    mqttclient.subscribe("NXP_FACE_RECG_MODULES_UPDATED", qos=1)
+    callback = cb
 
-    def proImageFile(self, imgf, recognition=True):
-        frame = np.array(imgf)
-        self.proCvFrame(frame, recognition)
+def stopListener():
+    global mqttclient, callback
+    if mqttclient is None:
+        return
+    mqttclient.disconnect()
+    mqttclient = None
+    callback = None
 
-    def proCvFrame(self, frame, recognition=True):
-        frameq = self.frameq[self.nextprocess]
-        try:
-            if (frameq.full()):
-                frameq.get_nowait()
-            frameq.put((recognition, frame, self.needUpdate[self.nextprocess]))
-            self.nextprocess = (self.nextprocess + 1) % self.processnum
-        except Exception as e:
-            print(e)
-
-    def getResult(self):
-       try:
-           retq = self.retq[self.nextresult]
-           ret, updated = retq.get_nowait()
-           if updated == True:
-               self.needUpdate[self.nextresult] = False
-           self.nextresult = (self.nextresult + 1) % self.processnum
-           return ret
-       except Exception as e:
-           return None
-
-    def deleteName(self, name):
-        return facemodules.delete_module(name)
-
-    def getNames(self):
-        return facemodules.get_names()
-
-    def onModuleUpdated(self, c, d, m):
-        print "get mesg"
-        for i in range(self.processnum):
-            self.needUpdate[i] = False
-        facemodules.update_modules()
-        self.callback()
-
-    def startListener(self, callback):
-        if self.mqttclient is not None:
-            return
-        self.mqttclient = mqtt.Client()
-        self.mqttclient.on_message = self.onModuleUpdated
-        self.mqttclient.on_connect = self.__onMqttConnect
-        self.mqttclient.connect(self.serverip, 1883, 60)
-        self.mqttclient.loop_start()
-        self.mqttclient.subscribe("NXP_FACE_RECG_MODULES_UPDATED", qos=1)
-        self.callback = callback
-    def __onMqttConnect(self, client, userdata, flags, rc):
-        print('Connected to MQTT broker with error code:' + str(rc))
-
-
-
-
-
+initEngine(server='10.193.20.77')

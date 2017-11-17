@@ -100,7 +100,7 @@ def detect_people(frame):
     rets = []
     for (i, rect) in enumerate(rects):
         aligned_face, face_pos = aligner.align(160,frame,landmarks[i])
-        rets.append({"name":"", "rect":rect, 'pos':face_pos})
+        rets.append({"name":"", "rect":rect, "pos":face_pos})
     return rets
 
 

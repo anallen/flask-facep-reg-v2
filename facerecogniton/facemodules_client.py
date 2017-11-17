@@ -21,8 +21,7 @@ import requests
 import threading
 
 url = ''
-train_images = []
-train_name = ''
+person_images = {}
 feature_data_set = {}
 
 def get_names():
@@ -32,28 +31,32 @@ def get_names():
     return names
 
 def delete_module(name):
-    if (feature_data_set is not None and name in feature_data_set):
-        args = {'id': name}
-        headers = {"Content-type":"application/json","Accept": "application/json"}
-        r = requests.delete(url, params=args, headers=headers)
-        ret = json.loads(r.text)
-        if ('state'in ret and ret['state'] == 'SUCCESS'):
-             return True
-    return False
+    if (name not in feature_data_set):
+        return False
+    args = {'id': name}
+    headers = {"Content-type":"application/json","Accept": "application/json"}
+    r = requests.delete(url, params=args, headers=headers)
+    ret = json.loads(r.text)
+    if ('state'in ret and ret['state'] == 'SUCCESS'):
+        return True
 
-def __training_thread():
-    args = {'id': train_images, 'end':'true'}
+def __training_thread(name, callback):
+    print "__training_thread"
+    args = {'id': name, 'end':'true'}
     headers = {"Content-type":"application/json","Accept": "application/json"}
     files = {}
-    for i,f in enumerate(train_images):
-        files['file{}'.format(i)] = ('{}.png'.format(i), f, 'image/png')
+    for i,f in enumerate(person_images[name]):
+        files['file{}'.format(i)] = ('{}.jpeg'.format(i), f, 'image/jpeg')
     r = requests.post(url, params=args, files=files)
-    train_images = []
-    train_name = ''
+    del person_images[name]
+    if callback:
+        callback()
 
 def training_start(name):
+    if (name in feature_data_set or name in person_images):
+        return False
     args = {'id': name}
-    train_name = name
+    person_images[name] = []
     headers = {"Content-type":"application/json","Accept": "application/json"}
     r = requests.put(url, params=args, headers=headers)
     ret = json.loads(r.text)
@@ -62,16 +65,19 @@ def training_start(name):
     else:
         return False
 
-def training_proframe(frame):
+def training_proframe(name, frame):
     picf = StringIO.StringIO()
     pi = Image.fromarray(frame)
     pi.save(picf, format = "jpeg")
     picf.seek(0)
 
-    train_images.append(picf)
+    person_images[name].append(picf)
 
-def training_finish():
-    t = threading.Thread(target=__training_thread_remote)
+def training_proimage(name, img):
+    person_images[name].append(img)
+
+def training_finish(name, callback=None):
+    t = threading.Thread(target=__training_thread, args=(name, callback,))
     t.start()
     return t
 
@@ -84,6 +90,7 @@ def update_modules():
         f.write(r.content)
         f.close()
         feature_data_set = json.loads(r.content);
+        print "update_modules"
         return True
     else:
         return False

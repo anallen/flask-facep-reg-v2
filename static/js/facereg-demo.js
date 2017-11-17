@@ -111,7 +111,7 @@ function sendMessage(type, msg) {
 }
 
 function createSocket(address) {
-
+    var numConnect = 0;
     socket = new WebSocket(address);
     socket.binaryType = "arraybuffer";
     socket.onopen = function() {
@@ -124,11 +124,16 @@ function createSocket(address) {
         console.log(e);
         j = JSON.parse(e.data)
         if (j.type == "CONNECT_RESP") {
-            sendMessage("LOADNAME_REQ", "");
+            if (numConnect >= 10) {
+                sendMessage("LOADNAME_REQ", "");
 //        } else if (j.type == "INITCAMERA") {
-            initCamera();
-            createCacheConvas();
-            processFrameLoop();
+                initCamera();
+                createCacheConvas();
+                processFrameLoop();
+            } else {
+                numConnect ++;
+                socket.send(JSON.stringify({'type': 'CONNECT_REQ'}));
+            }
         } else if (j.type == "LOADNAME_RESP") {
             redrawPeople(j['msg']);
         } else if (j.type == "RECGFRAME_RESP") {
