@@ -146,7 +146,7 @@ def onModuleUpdated(c, d, m):
     else:
         callback(False)
 
-def onMqttConnect(self, client, userdata, flags, rc):
+def onMqttConnect(client, userdata, flags, rc):
     print('Connected to MQTT broker with error code:' + str(rc))
 
 def startListener(cb):
@@ -155,7 +155,7 @@ def startListener(cb):
         return
     mqttclient = mqtt.Client()
     mqttclient.on_message = onModuleUpdated
-    self.client.on_connect = onMqttConnect
+    mqttclient.on_connect = onMqttConnect
     mqttclient.connect(serverip, 1883, 60)
     mqttclient.loop_start()
     mqttclient.subscribe("NXP_FACE_RECG_MODULES_UPDATED", qos=1)
