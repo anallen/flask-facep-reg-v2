@@ -28,16 +28,18 @@ limitations under the License.
     </head>
     <body>
         <div class="container">
-            <div class="header" style="visibility:hidden;">
+            <div class="header" style="visibility:hidden;" id="cameradiv">
                 <video id="videocamera" width="640" height="480" preload="auto"/>
             </div>
-            <div class="header">
+            <div class="header" style="visibility:hidden;" id="videodiv">
+                <img src="{{ url_for('video_feed') }}" width="800" height="600">
+            </div>
+            <div class="header" style="visibility:hidden;" id="canvasdiv">
                 <canvas id="canvasoutput" width="800" height="600"/>
             </div>
             <div class="content2">
                 <h4>All Names:</h4>
-                <textarea style="resize:none" readonly id="identity"
-                          cols ="50" rows = "4"> </textarea>
+                <textarea style="resize:none" readonly id="identity" cols ="50" rows = "4"></textarea>
             </div>
             <div class="content1">
                 <h4>Input Your Name:
@@ -48,16 +50,21 @@ limitations under the License.
                     <button type="button" id="btn_delete">Delete Person</button>
                     Status: <span id="trainingStatus"></span>
                 </h4>
-                <div style="visibility:hidden;" id="processdiv">
-                <h4>Face Left :
-                    <progress value="0" class="mypro" id="processleft"  max="15"/>
-                </h4>
-                <h4>Face Right
-                    <progress value="0" class="mypro" id="processright" max="15"/>
-                </h4>
-                <h4>Face Front
-                    <progress value="0" class="mypro" id="processfront" max="15"/>
-                </h4>
+                <div style="display:none;" id="processdiv">
+                    <h4>Face Left :
+                        <progress value="0" class="mypro" id="processleft"  max="15"/>
+                    </h4>
+                    <h4>Face Right
+                        <progress value="0" class="mypro" id="processright" max="15"/>
+                    </h4>
+                    <h4>Face Front
+                        <progress value="0" class="mypro" id="processfront" max="15"/>
+                    </h4>
+                 </div>
+                <div style="display:none;" id="processimg">
+                    <h4>Traing on Cloud
+                         <img src="{{url_for('static', filename='images/loading.gif')}}"/>
+                    </h4>
                 </div>
             </div>
         </div>
@@ -74,6 +81,7 @@ limitations under the License.
      var bufferCtx = [], bufferConvas = [], currentCtx;
      var recgRet, vidReady = false;
      const bufNum = 20;
+     console.log("Start");
 
      $('#btn_start').click(btnStartOnclick);
      //$('#btn_finish').click(btnFinishOnclick);

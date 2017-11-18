@@ -4,12 +4,13 @@ from autobahn.twisted.websocket import WebSocketServerFactory, \
                                WebSocketServerProtocol, \
                                listenWS
 
-from multiprocessing import Process, Queue, Lock
+from multiprocessing import Process, Queue, Lock, Manager
 import threading, time
 import numpy as np
 import facemodules_client as facemodules
 import paho.mqtt.client as mqtt
 
+Global = Manager().Namespace()
 
 class FaceRecognitonProcess(Process):
     def __init__(self, frameq, retq, serverip):
@@ -44,10 +45,8 @@ class FaceRecognitonProcess(Process):
                 print e
 
 processnum = 1
-processes = []
 frameq = []
 retq = []
-needUpdate = []
 
 nextprocess = 0
 nextresult = 0
@@ -55,14 +54,17 @@ nextresult = 0
 serverip = ""
 mqttclient = None
 
-training = False
-poscount = {"Left" : 0, "Right": 0, "Center": 0};
-training_name = None
+Global.poscount = {"Left" : 0, "Right": 0, "Center": 0};
+
+Global.training = False
+Global.training_name = None
 
 def initEngine(pronum=1, server='localhost'):
+    print"initEngine"
     global serverip, processnum
     serverip = server
     processnum = pronum
+    need = []
     
     for i in range(processnum):
         fq = Queue(maxsize = 1)
@@ -71,78 +73,80 @@ def initEngine(pronum=1, server='localhost'):
         process.start()
         frameq.append(fq)
         retq.append(rq)
-        processes.append(process)
-        needUpdate.append(True)
+        need.append(True)
 
+    Global.needUpdate = need
     facemodules.modules_init(serverip)
 
 def proImageFile(imgf):
     frame = np.array(imgf)
     proCvFrame(frame)
-    if training:
-        facemodules.training_proframe(training_name, frame)
+    if Global.training:
+        facemodules.training_proframe(Global.training_name, frame)
         #facemodules.training_proimage(training_name, imgf)
 
 def proCvFrame(frame):
-    global nextprocess,training
+    global nextprocess
     fq = frameq[nextprocess]
     try:
         if (fq.full()):
             fq.get_nowait()
-        fq.put((training, frame, needUpdate[nextprocess]))
+        fq.put((Global.training, frame, Global.needUpdate[nextprocess]))
         nextprocess = (nextprocess + 1) % processnum
     except Exception as e:
         print(e)
 
 def trainStart(name):
-    global training,poscount,training_name
-    if(training or training_name or facemodules.training_start(name) == False):
+    if(Global.training or Global.training_name or facemodules.training_start(name) == False):
         return False
-    training = True
-    training_name = name
-    poscount = {"Left" : 0, "Right": 0, "Center": 0};
+    Global.training = True
+    Global.training_name = name
+    Global.poscount = {"Left" : 0, "Right": 0, "Center": 0};
     return True
 
 def getResult():
-    global nextresult,poscount,training,training_name
+    global nextresult
     try:
         rq = retq[nextresult]
         #rets, updated = rq.get()
         rets, updated = rq.get_nowait()
         if updated:
-            needUpdate[nextresult] = False
+            need = Global.needUpdate
+            need[nextresult] = False
+            Global.needUpdate = need
         for i in rets:
             i["info"] = facemodules.get_info(i["name"])
-        if training and len(rets) == 1 and "pos" in rets[0]:
-            if poscount[rets[0]["pos"]] < 15:
-                poscount[rets[0]["pos"]] += 1
-            print(poscount)
-            if poscount["Left"] == 15 and poscount["Right"] == 15 and poscount["Center"] == 15:
-                facemodules.training_finish(training_name)
-                training = False
-            rets[0]["name"] = training_name + "-training"
-            rets[0]['l'] = poscount["Left"]
-            rets[0]['r'] = poscount["Right"]
-            rets[0]['f'] = poscount["Center"]
+        if Global.training and len(rets) == 1 and "pos" in rets[0]:
+            poscnt = Global.poscount
+            if poscnt[rets[0]["pos"]] < 15:
+                poscnt[rets[0]["pos"]] += 1
+                Global.poscount = poscnt
+            if poscnt["Left"] == 15 and poscnt["Right"] == 15 and poscnt["Center"] == 15:
+                facemodules.training_finish(Global.training_name)
+                Global.training = False
         nextresult = (nextresult + 1) % processnum
         return rets
     except Exception as e:
         print e
         return None
 
+def getPosCount():
+    return Global.poscount["Left"], Global.poscount["Right"], Global.poscount["Center"], Global.training
 
 deleteName = facemodules.delete_module
 getNames = facemodules.get_names
 
 def onModuleUpdated(c, d, m):
     print "get mesg"
-    global processnum,callback,needUpdate,training_name
+    global processnum,callback
+    need = []
     facemodules.update_modules()
     for i in range(processnum):
-        needUpdate[i] = True
-    if training_name and facemodules.has_name(training_name):
+        need.append(True)
+    Global.needUpdate = need
+    if Global.training_name and facemodules.has_name(Global.training_name):
         callback(True)
-        training_name = None
+        Global.training_name = None
     else:
         callback(False)
 

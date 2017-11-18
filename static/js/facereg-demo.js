@@ -25,6 +25,7 @@ function btnStartOnclick(){
 
     console.log("in btnStartOnclick");
     sendMessage("TRAINSTART_REQ", name);
+    $("#addPersonTxt").val('');
 }
 
 function btnFinishOnclick(){
@@ -39,15 +40,23 @@ function btnDeleteOnclick(){
 
     console.log("in btnDeleteOnclick");
     sendMessage("DELETENAME_REQ", name);
+    $("#addPersonTxt").val('');
 }
 
 function showProcessBars(){
-    document.getElementById("processdiv").setAttribute("style","visibility:visible");
     setProcessBards(0, 0, 0);
+    document.getElementById("processdiv").setAttribute("style","display:block");
 }
 function hideProcessBars(){
-    document.getElementById("processdiv").setAttribute("style","visibility:hidden");
+    document.getElementById("processdiv").setAttribute("style","display:none");
 }
+function showProcessImg(){
+    document.getElementById("processimg").setAttribute("style","display:block");
+}
+function hideProcessImg(){
+    document.getElementById("processimg").setAttribute("style","display:none");
+}
+
 
 function setProcessBards(l, r, f) {
     var left = document.getElementById('processleft');
@@ -145,6 +154,7 @@ function sendMessage(type, msg) {
 
 function createSocket(address) {
     var numConnect = 0;
+    console.log("createSocket");
     socket = new WebSocket(address);
     socket.binaryType = "arraybuffer";
     socket.onopen = function() {
@@ -153,7 +163,7 @@ function createSocket(address) {
         $("#trainingStatus").html("Recognizing.");
     }
     socket.onmessage = function(e) {
-        //console.log(e);
+        console.log(e);
         j = JSON.parse(e.data)
         if (j.type == "CONNECT_RESP") {
             if (numConnect >= 10) {
@@ -166,23 +176,26 @@ function createSocket(address) {
                 initCamera();
                 createCacheConvas();
                 processFrameLoop();
+        } else if (j.type == "INITVIDEO") {
+                initVideo();
         } else if (j.type == "LOADNAME_RESP") {
             redrawPeople(j['msg']);
         } else if (j.type == "RECGFRAME_RESP") {
             recgRet = j['msg'];
-            if (recgRet.length == 1 && 'l' in recgRet[0] &&
-			'r' in recgRet[0] && 'f' in recgRet[0]) {
-                setProcessBards(recgRet[0]['l'], recgRet[0]['r'], recgRet[0]['f'])
-            }
         } else if (j.type == "TRAINSTART_RESP") {
             $("#trainingStatus").html("Training.");
             showProcessBars();
         } else if (j.type == "TRAINFINISH_RESP") {
-            $("#trainingStatus").html("Recognizing.");
-             hideProcessBars();
+            hideProcessImg();
         } else if (j.type == "ERROR_MSG") {
             alert(j['msg']);
         } else if (j.type == "TRAINPROCESS") {
+            setProcessBards(j['msg']['l'], j['msg']['r'], j['msg']['f'])
+            if (j['msg']['l'] == 15 && j['msg']['r'] == 15 &&  j['msg']['f'] == 15) {
+                hideProcessBars();
+                showProcessImg();
+                $("#trainingStatus").html("Recognizing.");
+            }
         } else {
             console.log("Unrecognized message type: " + j.type);
         }
@@ -198,8 +211,12 @@ function createSocket(address) {
     }
 }
 
+function initVideo() {
+     document.getElementById("videodiv").setAttribute("style","visibility:visible");
+}
 
 function initCamera() {
+     document.getElementById("canvasdiv").setAttribute("style","visibility:visible");
      onErr = function(error) {
          alert(error);
      };
