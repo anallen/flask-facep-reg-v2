@@ -12,7 +12,7 @@ import time, StringIO, base64, os
 from PIL import Image
 import threading
 
-
+video_device = ""
  
 class FaceServerProtocol(WebSocketServerProtocol):
     def __init__(self):
@@ -33,6 +33,14 @@ class FaceServerProtocol(WebSocketServerProtocol):
         facerecg.stopListener()
         print "close"
 
+    def getPosCount(self):
+        print "getPosCount"
+        pos = {}
+        pos['l'], pos['r'], pos['f'], needMore = facerecg.getPosCount()
+        self.sendSocketMessage("TRAINPROCESS", pos)
+        if needMore:
+            reactor.callLater(0.3, self.getPosCount)
+
     def onMessage(self, payload, binary):
         raw = payload.decode('utf8')
         msg = json.loads(raw)
@@ -41,7 +49,10 @@ class FaceServerProtocol(WebSocketServerProtocol):
         elif msg['type'] == "LOADNAME_REQ":
             names = facerecg.getNames()
             self.sendSocketMessage("LOADNAME_RESP", ",".join(names))
-            self.sendSocketMessage("INITCAMERA")
+            if video_device == "laptop":
+                self.sendSocketMessage("INITCAMERA")
+            else:
+                self.sendSocketMessage("INITVIDEO")
         elif msg['type'] == "DELETENAME_REQ":
             name = msg['msg'].encode('ascii', 'ignore')
             ret = facerecg.deleteName(name)
@@ -59,6 +70,7 @@ class FaceServerProtocol(WebSocketServerProtocol):
                 self.sendSocketMessage("ERROR_MSG", name + " is already in database")
             else:
                 self.sendSocketMessage("TRAINSTART_RESP")
+                reactor.callLater(0.3, self.getPosCount)
         elif msg['type'] == "TRAINFINISH_REQ":
             print("TRAINFINISH_REQ ignore")
 
@@ -85,7 +97,9 @@ def startSocketServer():
     reactor.listenSSL(9000, factory, ctx_factory)
     reactor.run()
 
-def startWebSocketServer(tls_key, tls_crt):
+def startWebSocketServer(tls_key, tls_crt, dev):
+    global video_device
+    video_device = dev
     p2 = Process(target = startSocketServer)
     p2.start()
 
