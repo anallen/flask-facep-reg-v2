@@ -28,7 +28,8 @@ class FaceRecognitonProcess(Process):
     def run(self):
         import face_recg as face_recg
         
-        print("recogProcess start")
+        print("Face recognition engine initialized")
+        print("Please open browser and visite https://[board-ip]:5000/")
         while (1):
             try:
                 training, inFrame, needUpdate = self.reciveFrame()
@@ -60,7 +61,6 @@ Global.training = False
 Global.training_name = None
 
 def initEngine(pronum=1, server='localhost'):
-    print"initEngine"
     global serverip, processnum
     serverip = server
     processnum = pronum
@@ -81,9 +81,6 @@ def initEngine(pronum=1, server='localhost'):
 def proImageFile(imgf):
     frame = np.array(imgf)
     proCvFrame(frame)
-    if Global.training:
-        facemodules.training_proframe(Global.training_name, frame)
-        #facemodules.training_proimage(training_name, imgf)
 
 def proCvFrame(frame):
     global nextprocess
@@ -93,12 +90,15 @@ def proCvFrame(frame):
             fq.get_nowait()
         fq.put((Global.training, frame, Global.needUpdate[nextprocess]))
         nextprocess = (nextprocess + 1) % processnum
+        if Global.training:
+            facemodules.training_proframe(Global.training_name, frame)
     except Exception as e:
         print(e)
 
 def trainStart(name):
-    if(Global.training or Global.training_name or facemodules.training_start(name) == False):
+    if(Global.training or Global.training_name):
         return False
+    facemodules.training_start(name)
     Global.training = True
     Global.training_name = name
     Global.poscount = {"Left" : 0, "Right": 0, "Center": 0};
@@ -118,10 +118,12 @@ def getResult():
             i["info"] = facemodules.get_info(i["name"])
         if Global.training and len(rets) == 1 and "pos" in rets[0]:
             poscnt = Global.poscount
+            print "training_finish",poscnt
             if poscnt[rets[0]["pos"]] < 15:
                 poscnt[rets[0]["pos"]] += 1
                 Global.poscount = poscnt
             if poscnt["Left"] == 15 and poscnt["Right"] == 15 and poscnt["Center"] == 15:
+                print "training_finish"
                 facemodules.training_finish(Global.training_name)
                 Global.training = False
         nextresult = (nextresult + 1) % processnum
@@ -137,7 +139,6 @@ deleteName = facemodules.delete_module
 getNames = facemodules.get_names
 
 def onModuleUpdated(c, d, m):
-    print "get mesg"
     global processnum,callback
     need = []
     facemodules.update_modules()

@@ -54,7 +54,7 @@ def __training_thread(name, callback):
         callback()
 
 def training_start(name):
-    if (name in feature_data_set or name in person_images):
+    if (name in feature_data_set):
         return False
     args = {'id': name}
     person_images[name] = []
@@ -67,6 +67,8 @@ def training_start(name):
         return False
 
 def training_proframe(name, frame):
+    if name not in person_images:
+        person_images[name] = []
     picf = StringIO.StringIO()
     pi = Image.fromarray(frame)
     pi.save(picf, format = "jpeg")
@@ -78,11 +80,13 @@ def training_proimage(name, img):
     person_images[name].append(img)
 
 def training_finish(name, callback=None):
+    print("in training_finish", name)
     t = threading.Thread(target=__training_thread, args=(name, callback,))
     t.start()
     return t
 
 def update_modules():
+    print "Downloading modules from cloud."
     global feature_data_set, info_data_set
     headers = {"Content-type":"application/json","Accept": "application/json"}
     r = requests.get(url, headers=headers)
@@ -96,9 +100,10 @@ def update_modules():
         text = f.read()
         info_data_set = json.loads(text)
         f.close()
-        print "update_modules"
+        print "Modules updated successfully"
         return True
     else:
+        print "Modules updated failed"
         return False
 
 def has_name(name):

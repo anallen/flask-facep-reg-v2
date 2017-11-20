@@ -14,16 +14,16 @@ class FaceFeature(object):
         :param face_rec_sess: FaceRecSession object
         :param model_path:
         '''
-        print("Loading model...")
+        print("Loading face recognition models(it will take about 1 minute)...")
         with tf.Graph().as_default(), tf.device('/cpu:0'):
             self.sess = tf.Session()
             self.x = tf.placeholder('float', [None,160,160,3]); #default input for the NN is 160x160x3
             self.embeddings = tf.nn.l2_normalize(
-                                        resnet.inference(self.x, 0.6, phase_train=False)[0], 1, 1e-10); #some magic numbers that u dont have to care about
+                                        resnet.inference(self.x, 0.6, phase_train=False)[0], 1, 1e-10);
 
             saver = tf.train.Saver() #saver load pretrain model
             saver.restore(self.sess, model_path)
-            print("Model loaded")
+            print("Face recognition models loaded")
 
 
     def get_features(self, input_imgs):

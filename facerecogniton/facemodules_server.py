@@ -76,7 +76,6 @@ def get_person_names():
     return names
 
 def delete_module(name):
-    print feature_data_set
     if (feature_data_set is not None and name in feature_data_set):
         del feature_data_set[name];
         f = open('./models/facerec_128D.txt', 'w');

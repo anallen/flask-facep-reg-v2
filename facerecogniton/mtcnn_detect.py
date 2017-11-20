@@ -21,7 +21,7 @@ class MTCNNDetect(object):
         self.factor = factor
         self.scale_factor = scale_factor;
         with tf.Graph().as_default(), tf.device('/cpu:0'):
-            print("Loading MTCNN Face detection model")
+            print("Loading Face detection model")
             self.sess = tf.Session()
             if not model_path:
                 model_path, _ = os.path.split(os.path.realpath(__file__))
@@ -43,7 +43,7 @@ class MTCNNDetect(object):
             self.rnet = lambda img: self.sess.run(('rnet/conv5-2/conv5-2:0', 'rnet/prob1:0'), feed_dict={'rnet/input:0': img})
             self.onet = lambda img: self.sess.run(('onet/conv6-2/conv6-2:0', 'onet/conv6-3/conv6-3:0', 'onet/prob1:0'),
                                             feed_dict={'onet/input:0': img})
-            print("MTCNN Model loaded")
+            print("Face detection model loaded")
 
 
 

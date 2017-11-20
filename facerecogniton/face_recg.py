@@ -24,7 +24,7 @@ import StringIO
 #FRGraph = FaceRecGraph();
 aligner = AlignCustom();
 extract_feature = FaceFeature()
-face_detect = MTCNNDetect(scale_factor=1); #scale_factor, rescales image for faster detection
+face_detect = MTCNNDetect(scale_factor=3); #scale_factor, rescales image for faster detection
 feature_data_set = None
 
 
@@ -68,7 +68,7 @@ facerec_128D.txt Data Structure:
 This function basically does a simple linear search for 
 ^the 128D vector with the min distance to the 128D vector of the face on screen
 '''
-def findPeople(features_arr, positions, thres = 0.5, percent_thres = 90):
+def findPeople(features_arr, positions, thres = 0.6, percent_thres = 92):
     '''
     :param features_arr: a list of 128d Features of all faces on screen
     :param positions: a list of face position types of all faces on screen

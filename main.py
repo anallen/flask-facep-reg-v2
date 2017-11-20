@@ -9,6 +9,7 @@ parser.add_argument('--dev', type=str, required=True,
                     help='[usb|laptop|"url" of IP camera]input video device')
 args = parser.parse_args()
 
+print("Initialzing face recognition engine.")
 if args.dev == 'laptop':
     print("Using the camera of laptop.")
 elif args.dev == 'usb':

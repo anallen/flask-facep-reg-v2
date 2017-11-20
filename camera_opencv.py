@@ -6,6 +6,7 @@ import Queue
 
 class Camera(BaseCamera):
     video_source = 0
+    buffer_count = 10
     reg_ret = []
 
     @staticmethod
@@ -13,22 +14,31 @@ class Camera(BaseCamera):
         Camera.video_source = source
 
     @staticmethod
+    def set_buffer_count(count):
+        Camera.buffer_count = count
+
+    @staticmethod
     def frames():
-        frameq = Queue.Queue(maxsize=10)
+        frameq = Queue.Queue(maxsize=Camera.buffer_count)
         camera = cv2.VideoCapture(Camera.video_source)
         camera.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
         camera.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
-        #camera.set(cv2.CAP_PROP_FPS, 30)
-        current_frame = 0
         recg_ret = []
 
         if not camera.isOpened():
             raise RuntimeError('Could not start camera.')
 
+        for i in range(Camera.buffer_count - 1):
+            _, img = camera.read()
+            frameq.put(img)
+
         while True:
             # read current frame
             _, img = camera.read()
             facerecg.proCvFrame(img)
+            frameq.put(img)
+            img = frameq.get()
+
             r = facerecg.getResult()
             if r is not None:
                 recg_ret = r
