@@ -188,11 +188,11 @@ def on_sns_message(client, userdata, message):
         msgname = ""
         for key in history_names:
             msgname += key
-        if " " in history_names and msgname == "":
+        if " " in history_names and (msgname == "" or msgname == " "):
             msgname = "Unknown person"
         try:
             t = time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time()))
-            msg = t + ":" + msgname + " has entered factory in Las Vegas."
+            msg = t + "--" + msgname + " has entered factory in Las Vegas."
             mqttclient.publish("topic_state_people_recg", msg)
             print(msg)
             #sns_client = boto3.client('sns', region_name='us-west-2')
