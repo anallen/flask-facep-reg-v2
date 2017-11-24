@@ -11,7 +11,7 @@ import facemodules_client as facemodules
 import paho.mqtt.client as mqtt
 import boto3
 from email.mime.text import MIMEText
-import smtplib
+import smtplib, time
 
 Global = Manager().Namespace()
 
@@ -188,7 +188,9 @@ def on_sns_message(client, userdata, message):
         if " " in history_names and msgname == "":
             msgname = "Unknown person"
         try:
-            msg = msgname + " has entered factory in Las Vegas."
+            t = time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time()))
+            msg = t + msgname + " has entered factory in Las Vegas."
+            mqttclient.publish("topic_state_people_recg", msg)
             print(msg)
             #sns_client = boto3.client('sns', region_name='us-west-2')
             #response = sns_client.publish(PhoneNumber='+8613811968095', Message=msg)
