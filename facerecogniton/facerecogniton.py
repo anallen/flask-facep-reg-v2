@@ -9,9 +9,17 @@ import threading, time
 import numpy as np
 import facemodules_client as facemodules
 import paho.mqtt.client as mqtt
+import boto3
+from email.mime.text import MIMEText
+import smtplib
 
 Global = Manager().Namespace()
 
+from_addr = 'gf_dlut@126.com'
+password = 'b41466'
+smtp_server = 'smtp.126.com'
+to_addr = "mingkai.hu@nxp.com"
+smtpserver = None
 class FaceRecognitonProcess(Process):
     def __init__(self, frameq, retq, serverip):
         Process.__init__(self)
@@ -127,6 +135,8 @@ def getResult():
                 facemodules.training_finish(Global.training_name)
                 Global.training = False
         nextresult = (nextresult + 1) % processnum
+        if len(rets) == 1 and rets[0]["pos"] == "Center":
+            snsmqttclient.publish("/fr/name", rets[0]["name"]);
         return rets
     except Exception as e:
         print e
@@ -151,11 +161,49 @@ def onModuleUpdated(c, d, m):
     else:
         callback(False)
 
+door_stat = '0'
+history_names = []
+count = 0
+def on_sns_message(client, userdata, message):
+    global door_stat,history_names,count
+
+    if message.topic == "/fr/door":
+        door_stat = message.payload
+        print("Get door msg", door_stat)
+        if door_stat == '0':
+            history_names = []
+            count = 0
+    elif message.topic == "/fr/name" and  door_stat == '1' and count < 5:
+        name = message.payload
+        count += 1
+        if name not in history_names:
+            history_names.append(name)
+
+        if count < 5:
+            return
+
+        msgname = ""
+        for key in history_names:
+            msgname += key
+        if " " in history_names and msgname == "":
+            msgname = "Unknown person"
+        try:
+            msg = msgname + " has entered factory in Las Vegas."
+            print(msg)
+            #sns_client = boto3.client('sns', region_name='us-west-2')
+            #response = sns_client.publish(PhoneNumber='+8613811968095', Message=msg)
+            mailmsg = MIMEText(msg, 'plain', 'utf-8')
+            mailmsg['from'] = from_addr
+            mailmsg['to'] = to_addr
+            smtpserver.sendmail(from_addr, to_addr, mailmsg.as_string())
+        except Exception as e:
+            print(e)
+
 def onMqttConnect(client, userdata, flags, rc):
     print('Connected to MQTT broker with error code:' + str(rc))
 
 def startListener(cb):
-    global mqttclient, callback
+    global mqttclient, callback, snsmqttclient, smtpserver
     if mqttclient is not None:
         return
     mqttclient = mqtt.Client()
@@ -166,6 +214,19 @@ def startListener(cb):
     mqttclient.subscribe("NXP_FACE_RECG_MODULES_UPDATED", qos=1)
     callback = cb
 
+    snsmqttclient = mqtt.Client()
+    snsmqttclient.connect("localhost", 1883, 60)
+    snsmqttclient.on_message = on_sns_message
+    snsmqttclient.subscribe("/fr/door", qos=1)
+    snsmqttclient.subscribe("/fr/name", qos=1)
+    snsmqttclient.loop_start()
+
+    print("Connecting SMTP mail server")
+    smtpserver = smtplib.SMTP(smtp_server, 25)
+    smtpserver.login(from_addr, password)
+    print("ConnectedSMTP mail server")
+    
+
 def stopListener():
     global mqttclient, callback
     if mqttclient is None:
@@ -174,4 +235,5 @@ def stopListener():
     mqttclient = None
     callback = None
 
+#initEngine(server='10.193.20.77')
 initEngine(server='ec2-52-35-84-228.us-west-2.compute.amazonaws.com')

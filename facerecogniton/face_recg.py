@@ -53,7 +53,7 @@ def recog_process_frame(frame):
     features_arr = extract_feature.get_features(aligns)
     recog_data = findPeople(features_arr,positions);
     for (i,rect) in enumerate(rects):
-        rets.append({"name":recog_data[i], "rect":rect})
+        rets.append({"name":recog_data[i], "rect":rect, "pos":positions[i]})
     return rets
 
 '''
@@ -68,7 +68,7 @@ facerec_128D.txt Data Structure:
 This function basically does a simple linear search for 
 ^the 128D vector with the min distance to the 128D vector of the face on screen
 '''
-def findPeople(features_arr, positions, thres = 0.6, percent_thres = 92):
+def findPeople(features_arr, positions, thres = 0.6, percent_thres = 95):
     '''
     :param features_arr: a list of 128d Features of all faces on screen
     :param positions: a list of face position types of all faces on screen
