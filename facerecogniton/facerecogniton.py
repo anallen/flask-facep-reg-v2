@@ -173,6 +173,9 @@ def on_sns_message(client, userdata, message):
         if door_stat == '0':
             history_names = []
             count = 0
+            mqttclient.publish("topic_state_door_close", "no use")
+        else:
+            mqttclient.publish("topic_state_door_open", "no use")
     elif message.topic == "/fr/name" and  door_stat == '1' and count < 5:
         name = message.payload
         count += 1
@@ -189,7 +192,7 @@ def on_sns_message(client, userdata, message):
             msgname = "Unknown person"
         try:
             t = time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time()))
-            msg = t + msgname + " has entered factory in Las Vegas."
+            msg = t + ":" + msgname + " has entered factory in Las Vegas."
             mqttclient.publish("topic_state_people_recg", msg)
             print(msg)
             #sns_client = boto3.client('sns', region_name='us-west-2')
