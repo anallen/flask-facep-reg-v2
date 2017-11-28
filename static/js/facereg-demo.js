@@ -108,7 +108,8 @@ function drawFrame(){
         outputCtx.beginPath();
         outputCtx.rect(rect[0]*scale, rect[1]*scale, rect[2]*scale, rect[3]*scale);
         outputCtx.closePath();
-        outputCtx.font="25px Arial";
+        outputCtx.fillStyle = 'red';
+        outputCtx.font="30px Arial";
         outputCtx.fillText(name, rect[0]*scale, rect[1]*scale);
         //outputCtx.fillText(inf, rect[0]*scale + rect[2]*scale, rect[1]*scale);
         drawLongText(inf, outputCtx, rect[0]*scale + rect[2]*scale, rect[1]*scale)
