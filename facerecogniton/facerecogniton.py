@@ -241,4 +241,4 @@ def stopListener():
     callback = None
 
 #initEngine(server='10.193.20.77')
-initEngine(server='ec2-35-161-19-251.us-west-2.compute.amazonaws.com')
+initEngine(server='ec2-52-35-84-228.us-west-2.compute.amazonaws.com')
