@@ -19,7 +19,6 @@ from_addr = 'gf_dlut@126.com'
 password = 'b41466'
 smtp_server = 'smtp.126.com'
 to_addr = "mingkai.hu@nxp.com"
-smtpserver = None
 class FaceRecognitonProcess(Process):
     def __init__(self, frameq, retq, serverip):
         Process.__init__(self)
@@ -200,7 +199,6 @@ def on_sns_message(client, userdata, message):
             mailmsg = MIMEText(msg, 'plain', 'utf-8')
             mailmsg['from'] = from_addr
             mailmsg['to'] = to_addr
-            smtpserver.sendmail(from_addr, to_addr, mailmsg.as_string())
         except Exception as e:
             print(e)
 
@@ -208,7 +206,7 @@ def onMqttConnect(client, userdata, flags, rc):
     print('Connected to MQTT broker with error code:' + str(rc))
 
 def startListener(cb):
-    global mqttclient, callback, snsmqttclient, smtpserver
+    global mqttclient, callback, snsmqttclient
     if mqttclient is not None:
         return
     mqttclient = mqtt.Client()
@@ -227,8 +225,6 @@ def startListener(cb):
     snsmqttclient.loop_start()
 
     print("Connecting SMTP mail server")
-    smtpserver = smtplib.SMTP(smtp_server, 25)
-    smtpserver.login(from_addr, password)
     print("ConnectedSMTP mail server")
     
 
