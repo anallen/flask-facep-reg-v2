@@ -9,16 +9,10 @@ import threading, time
 import numpy as np
 import facemodules_client as facemodules
 import paho.mqtt.client as mqtt
-import boto3
-from email.mime.text import MIMEText
-import smtplib, time
+#import boto3
 
 Global = Manager().Namespace()
 
-from_addr = 'gf_dlut@126.com'
-password = 'b41466'
-smtp_server = 'smtp.126.com'
-to_addr = "mingkai.hu@nxp.com"
 class FaceRecognitonProcess(Process):
     def __init__(self, frameq, retq, serverip):
         Process.__init__(self)
@@ -134,8 +128,8 @@ def getResult():
                 facemodules.training_finish(Global.training_name)
                 Global.training = False
         nextresult = (nextresult + 1) % processnum
-        if len(rets) == 1 and rets[0]["pos"] == "Center":
-            snsmqttclient.publish("/fr/name", rets[0]["name"]);
+#        if len(rets) == 1 and rets[0]["pos"] == "Center":
+#            snsmqttclient.publish("/fr/name", rets[0]["name"]);
         return rets
     except Exception as e:
         print e
@@ -196,9 +190,6 @@ def on_sns_message(client, userdata, message):
             print(msg)
             #sns_client = boto3.client('sns', region_name='us-west-2')
             #response = sns_client.publish(PhoneNumber='+8613811968095', Message=msg)
-            mailmsg = MIMEText(msg, 'plain', 'utf-8')
-            mailmsg['from'] = from_addr
-            mailmsg['to'] = to_addr
         except Exception as e:
             print(e)
 
@@ -217,12 +208,12 @@ def startListener(cb):
     mqttclient.subscribe("NXP_FACE_RECG_MODULES_UPDATED", qos=1)
     callback = cb
 
-    snsmqttclient = mqtt.Client()
-    snsmqttclient.connect("localhost", 1883, 60)
-    snsmqttclient.on_message = on_sns_message
-    snsmqttclient.subscribe("/fr/door", qos=1)
-    snsmqttclient.subscribe("/fr/name", qos=1)
-    snsmqttclient.loop_start()
+#    snsmqttclient = mqtt.Client()
+#    snsmqttclient.connect("localhost", 1883, 60)
+#    snsmqttclient.on_message = on_sns_message
+#    snsmqttclient.subscribe("/fr/door", qos=1)
+#    snsmqttclient.subscribe("/fr/name", qos=1)
+#    snsmqttclient.loop_start()
 
     print("Connecting SMTP mail server")
     print("ConnectedSMTP mail server")
