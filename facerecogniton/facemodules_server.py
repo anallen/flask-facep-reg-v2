@@ -21,6 +21,7 @@ import numpy as np
 from PIL import Image
 import StringIO
 import threading
+import codecs
 
 
 aligner = AlignCustom();
@@ -58,7 +59,7 @@ def __training_thread(name, callback):
     if (feature_data_set is not None):
         del person_images[name]
         feature_data_set[name] = person_features;
-        f = open('./models/facerec_128D.txt', 'w');
+        f = codecs.open('./models/facerec_128D.txt', 'w', 'utf-8');
         f.write(json.dumps(feature_data_set))
         f.close()
     if callback:
@@ -78,7 +79,7 @@ def get_person_names():
 def delete_module(name):
     if (feature_data_set is not None and name in feature_data_set):
         del feature_data_set[name];
-        f = open('./models/facerec_128D.txt', 'w');
+        f = codecs.open('./models/facerec_128D.txt', 'w', 'utf-8');
         f.write(json.dumps(feature_data_set))
         f.close()
         return True
@@ -87,7 +88,7 @@ def delete_module(name):
 
 def load_modules():
     global feature_data_set
-    f = open('./models/facerec_128D.txt','r');
+    f = codecs.open('./models/facerec_128D.txt','r', 'utf-8');
     feature_data_set = json.loads(f.read());
     f.close()
 

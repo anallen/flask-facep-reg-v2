@@ -1,5 +1,5 @@
+#encoding=utf-8
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 # by vellhe 2017/7/9
 from flask import Flask, send_from_directory
 from flask_restful import reqparse, abort, Api, Resource, request
@@ -13,6 +13,9 @@ from PIL import Image
 
 
 import facerecogniton.facemodules_server as facemodules
+import sys
+reload(sys)
+sys.setdefaultencoding('utf-8')
 parser = reqparse.RequestParser()
 
 app = Flask(__name__)
@@ -35,7 +38,7 @@ class TrainModels(Resource):
 
     def delete(self):
         args = parser.parse_args()
-        ret = facemodules.delete_module(args['id'])
+        ret = facemodules.delete_module(args['id'].decode('utf-8'))
         if ret == True:
             ret = {'state':'SUCCESS'}
             self.__modules_updated()
@@ -45,7 +48,7 @@ class TrainModels(Resource):
 
     def put(self):
         args = parser.parse_args()
-        ret = facemodules.training_start(args['id'])
+        ret = facemodules.training_start(args['id'].decode('utf-8'))
         if ret == True:
             ret = {'state':'SUCCESS'}
         elif ret == False:
@@ -59,8 +62,8 @@ class TrainModels(Resource):
             f.save(pif)
             pili = Image.open(pif)
             frame = np.array(pili)
-            facemodules.training_proframe(args['id'], frame)
-        ret = facemodules.training_finish(args['id'], self.__modules_updated)
+            facemodules.training_proframe(args['id'].decode('utf-8'), frame)
+        ret = facemodules.training_finish(args['id'].decode('utf-8'), self.__modules_updated)
         if ret == True:
             ret = {'state':'SUCCESS'}
         elif ret == False:
